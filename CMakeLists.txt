@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(2526_TI301_PJT C)
+project(2526_TI301_PJT_C)
 
 set(CMAKE_C_STANDARD 11)
 
