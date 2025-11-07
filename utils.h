@@ -7,20 +7,24 @@ typedef struct s_cell {
     struct s_cell *next;
 } cell;
 
-typedef struct s_list {
+typedef struct s_list_adj {
     cell *head;
-} list;
+} list_adj;
 
 typedef struct s_graph {
-    list *edges;
+    list_adj *edges;
     int num_edges;
 } graph;
 
 cell *create_cell(int end_edge, float weight);
-list* create_empty_list();
-void add_head(list *l, int end_edge, float weight);
+list_adj *create_empty_list();
 graph *create_empty_graph(int num_edges);
-void print_list(list *l);
+void add_head(list_adj *l, int end_edge, float weight);
+void print_list(list_adj *l);
 void print_graph(graph *g);
+graph *read_graph_from_file(const char *filename);
+int is_markov_graph(graph *g);
+void write_mermaid_file(graph *g, const char *filename);
 
 #endif
+

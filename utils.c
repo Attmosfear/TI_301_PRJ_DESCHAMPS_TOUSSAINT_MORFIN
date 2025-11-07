@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <math.h>
 #include "utils.h"
 
-
-cell *create_cell(int end_edge, float weight){
+cell *create_cell(int end_edge, float weight) {
     cell *c = malloc(sizeof(cell));
     c->end_edge = end_edge;
     c->weight = weight;
@@ -13,94 +12,113 @@ cell *create_cell(int end_edge, float weight){
     return c;
 }
 
-list *create_empty_list(){
-    list *l = malloc(sizeof(list));
+list_adj *create_empty_list() {
+    list_adj *l = malloc(sizeof(list_adj));
     l->head = NULL;
     return l;
 }
 
-void add_head(list *l, int end_edge, float weight){
+void add_head(list_adj *l, int end_edge, float weight) {
     cell *new_cell = create_cell(end_edge, weight);
     new_cell->next = l->head;
     l->head = new_cell;
 }
 
-graph *create_empty_graph(int num_edges){
+graph *create_empty_graph(int num_edges) {
     graph *g = malloc(sizeof(graph));
-    g->edges = (list *)malloc(num_edges * sizeof(list *));
-    for (int i = 0; i < num_edges; i++){
-        g->edges[i] = create_empty_list();
-    }
     g->num_edges = num_edges;
+    g->edges = malloc(num_edges * sizeof(list_adj));
+    for (int i = 0; i < num_edges; i++) g->edges[i].head = NULL;
     return g;
 }
 
-void print_list(list *l){
+void print_list(list_adj *l) {
     cell *c = l->head;
-    printf("[head %p] ", l->head);
-    while (c != NULL)
-    {
-        printf("(%d %f) %p->", c->end_edge, c->weight, c);
+    while (c) {
+        printf("(%d %.2f) -> ", c->end_edge, c->weight);
         c = c->next;
     }
+    printf("NULL\n");
 }
 
-void print_graph(graph *g)
-{
-    for (int i = 0; i < g->num_edges; i++)
-    {
-        printf("Liste pour le sommet %d: ", i);
-        print_list(g->edges[i]);
+void print_graph(graph *g) {
+    for (int i = 0; i < g->num_edges; i++) {
+        printf("Sommet %d: ", i + 1);
+        print_list(&g->edges[i]);
     }
 }
 
-graph *readGraph(const char *filename) {
-    FILE *file = fopen(filename, "rt"); // read-only, text
+graph *read_graph_from_file(const char *filename) {
+    // Ouvre le fichier en lecture texte
+    FILE *file = fopen(filename, "rt");
+    if (!file) { perror("open"); exit(EXIT_FAILURE); }
+
     int nbvert, depart, arrivee;
     float proba;
-    graph *g;
-    if (file==NULL)
-    {
-    perror("Could not open file for reading");
-    exit(EXIT_FAILURE);
-    }
-    // first line contains number of vertices
-    if (fscanf(file, "%d", &nbvert) != 1)
-    {
-    perror("Could not read number of vertices");
-    exit(EXIT_FAILURE);
-    }
-    g = create_empty_graph(nbvert);
+
+    // Lit le nombre de sommets (première ligne)
+    if (fscanf(file, "%d", &nbvert) != 1) { perror("read nbvert"); exit(EXIT_FAILURE); }
+    graph *g = create_empty_graph(nbvert);
+
+    // Lit chaque ligne suivante : départ, arrivée, probabilité
     while (fscanf(file, "%d %d %f", &depart, &arrivee, &proba) == 3)
-    {
-    // on obtient, pour chaque ligne du fichier les valeurs
-    // depart, arrivee, et proba
-    add_head(g->edges[depart], arrivee, proba);
-    }
+        add_head(&g->edges[depart - 1], arrivee, proba);
+
     fclose(file);
     return g;
-   }
+}
+
+
+int is_markov_graph(graph *g) {
+    int valid = 1;
+    // Parcourt tous les sommets
+    for (int i = 0; i < g->num_edges; i++) {
+        cell *c = g->edges[i].head;
+        float sum = 0;
+        // Calcule la somme des probabilités sortantes
+        while (c) { sum += c->weight; c = c->next; }
+        // Vérifie si la somme est proche de 1
+        if (sum < 0.99 || sum > 1.01) {
+            printf("Sommet %d invalide, somme=%.2f\n", i + 1, sum);
+            valid = 0;
+        }
+    }
+    if (valid) printf("Le graphe est un graphe de Markov\n");
+    else printf("Le graphe n'est pas un graphe de Markov\n");
+    return valid;
+}
 
 
 static char *getID(int i) {
-    // translate from 1,2,3, .. ,500+ to A,B,C,..,Z,AA,AB,...
     static char buffer[10];
     char temp[10];
     int index = 0;
-
-    i--; // Adjust to 0-based index
-    while (i >= 0)
-    {
+    i--;
+    while (i >= 0) {
         temp[index++] = 'A' + (i % 26);
         i = (i / 26) - 1;
     }
-
-    // Reverse the string to get the correct order
-    for (int j = 0; j < index; j++)
-    {
-        buffer[j] = temp[index - j - 1];
-    }
+    for (int j = 0; j < index; j++) buffer[j] = temp[index - j - 1];
     buffer[index] = '\0';
-
     return buffer;
 }
+
+void write_mermaid_file(graph *g, const char *filename) {
+    FILE *f = fopen(filename, "wt");
+    // en tête de config
+    fprintf(f, "---\nconfig:\nlayout: elk\ntheme: neo\nlook: neo\n---\nflowchart LR\n");
+    // Définit les sommets
+    for (int i = 0; i < g->num_edges; i++)
+        fprintf(f, "%s((%d))\n", getID(i + 1), i + 1);
+    // Ajoute les arêtes avec leurs probabilités
+    for (int i = 0; i < g->num_edges; i++) {
+        cell *c = g->edges[i].head;
+        while (c) {
+            fprintf(f, "%s -->|%.2f|%s\n", getID(i + 1), c->weight, getID(c->end_edge));
+            c = c->next;
+        }
+    }
+    fclose(f);
+}
+
+
