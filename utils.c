@@ -5,43 +5,37 @@
 #include "utils.h"
 
 
-cell *create_cell(int end_edge, float weight)
-{
-    cell *c;
+cell *create_cell(int end_edge, float weight){
+    cell *c = malloc(sizeof(cell));
     c->end_edge = end_edge;
     c->weight = weight;
     c->next = NULL;
     return c;
 }
 
-list *create_empty_list()
-{
-    list *l;
+list *create_empty_list(){
+    list *l = malloc(sizeof(list));
     l->head = NULL;
     return l;
 }
 
-void add_head(list *l, int end_edge, float weight);
-{
+void add_head(list *l, int end_edge, float weight){
     cell *new_cell = create_cell(end_edge, weight);
     new_cell->next = l->head;
     l->head = new_cell;
 }
 
-graph *create_empty_graph(int num_edges)
-{
-    graph *g;
-    g->edges = (list *)malloc(num_edges * sizeof(list));
-    for (int i = 0; i < num_edges; i++)
-    {
+graph *create_empty_graph(int num_edges){
+    graph *g = malloc(sizeof(graph));
+    g->edges = (list *)malloc(num_edges * sizeof(list *));
+    for (int i = 0; i < num_edges; i++){
         g->edges[i] = create_empty_list();
     }
     g->num_edges = num_edges;
     return g;
 }
 
-void print_list(list *l)
-{
+void print_list(list *l){
     cell *c = l->head;
     printf("[head %p] ", l->head);
     while (c != NULL)
@@ -51,7 +45,7 @@ void print_list(list *l)
     }
 }
 
-print_graph(graph *g)
+void print_graph(graph *g)
 {
     for (int i = 0; i < g->num_edges; i++)
     {
@@ -88,8 +82,7 @@ graph *readGraph(const char *filename) {
    }
 
 
-static char *getID(int i)
-{
+static char *getID(int i) {
     // translate from 1,2,3, .. ,500+ to A,B,C,..,Z,AA,AB,...
     static char buffer[10];
     char temp[10];
@@ -110,3 +103,4 @@ static char *getID(int i)
     buffer[index] = '\0';
 
     return buffer;
+}
