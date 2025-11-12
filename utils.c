@@ -4,6 +4,15 @@
 #include <math.h>
 #include "utils.h"
 
+
+// ============= FONCTIONS UTILITAIRE =============
+
+static int min(int a, int b) {
+    return (a < b) ? a : b;
+}
+
+// ============= FONCTIONS POUR LES LISTES ET LES GRAPHS =============
+
 cell *create_cell(int end_edge, float weight) {
     cell *c = malloc(sizeof(cell));
     c->end_edge = end_edge;
@@ -119,8 +128,8 @@ void write_mermaid_file(graph *g, const char *filename) {
 
     // Ajoute les arêtes avec leurs probabilités
     for (int i = 0; i < g->num_edges; i++) {
-        char from[10];  // ✅ VARIABLE TEMPORAIRE
-        strcpy(from, getID(i + 1));  // ✅ COPIER AVANT LE 2e APPEL
+        char from[10];
+        strcpy(from, getID(i + 1));
 
         cell *c = g->edges[i].head;
         while (c) {
@@ -131,5 +140,141 @@ void write_mermaid_file(graph *g, const char *filename) {
 
     fclose(f);
 }
+
+t_tarjan_vertex* init_tarjan_vertices(graph *g) {
+    t_tarjan_vertex *vertices = malloc(g->num_edges * sizeof(t_tarjan_vertex));
+    for (int i = 0; i < g->num_edges; i++) {
+        vertices[i].id = i + 1;
+        vertices[i].num = -1;
+        vertices[i].low = -1;
+        vertices[i].in_stack = 0;
+    }
+    return vertices;
+}
+
+// ============= FONCTIONS POUR LA PILE =============
+
+stack* create_stack(int capacity) {
+    stack *s = malloc(sizeof(stack));
+    s->data = malloc(capacity * sizeof(int));
+    s->top = -1;
+    s->capacity = capacity;
+    return s;
+}
+
+void push(stack *s, int value) {
+    if (s->top >= s->capacity - 1) {
+        // Agrandir la pile si nécessaire
+        s->capacity *= 2;
+        s->data = realloc(s->data, s->capacity * sizeof(int));
+    }
+    s->data[++s->top] = value;
+}
+
+int pop(stack *s) {
+    if (s->top < 0) {
+        fprintf(stderr, "Erreur: pile vide\n");
+        exit(EXIT_FAILURE);
+    }
+    return s->data[s->top--];
+}
+
+int peek(stack *s) {
+    if (s->top < 0) return -1;
+    return s->data[s->top];
+}
+
+int is_empty(stack *s) {
+    return s->top < 0;
+}
+
+void free_stack(stack *s) {
+    free(s->data);
+    free(s);
+}
+
+// ============= FONCTIONS POUR LES CLASSES =============
+
+classe* create_classe(const char *name) {
+    classe *c = malloc(sizeof(t_classe));
+    strcpy(c->name, name);
+    c->capacity = 10;
+    c->vertices = malloc(c->capacity * sizeof(tarjan_vertex));
+    c->nb_vertices = 0;
+    return c;
+}
+
+void add_vertex_to_classe(classe *c, tarjan_vertex v) {
+    if (c->nb_vertices >= c->capacity) {
+        c->capacity *= 2;
+        c->vertices = realloc(c->vertices, c->capacity * sizeof(tarjan_vertex));
+    }
+    c->vertices[c->nb_vertices++] = v;
+}
+
+void print_classe(classe *c) {
+    printf("Composante %s: {", c->name);
+    for (int i = 0; i < c->nb_vertices; i++) {
+        printf("%d", c->vertices[i].id);
+        if (i < c->nb_vertices - 1) printf(",");
+    }
+    printf("}\n");
+}
+
+void free_classe(classe *c) {
+    free(c->vertices);
+    free(c);
+}
+
+// ============= FONCTIONS POUR LA PARTITION =============
+
+partition* create_partition() {
+    partition *p = malloc(sizeof(partition));
+    p->capacity = 10;
+    p->classes = malloc(p->capacity * sizeof(classe));
+    p->nb_classes = 0;
+    return p;
+}
+
+void add_classe_to_partition(partition *p, classe *c) {
+    if (p->nb_classes >= p->capacity) {
+        p->capacity *= 2;
+        p->classes = realloc(p->classes, p->capacity * sizeof(classe));
+    }
+    p->classes[p->nb_classes++] = *c;
+}
+
+void print_partition(partition *p) {
+    printf("\n=== PARTITION DU GRAPHE ===\n");
+    for (int i = 0; i < p->nb_classes; i++) {
+        print_classe(&p->classes[i]);
+    }
+    printf("Nombre total de classes : %d\n", p->nb_classes);
+}
+
+void free_partition(partition *p) {
+    for (int i = 0; i < p->nb_classes; i++) {
+        free(p->classes[i].vertices);
+    }
+    free(p->classes);
+    free(p);
+}
+
+// ============= ALGORITHME DE TARJAN =============
+
+tarjan_vertex* init_tarjan_vertices(graph *g) {
+    tarjan_vertex *vertices = malloc(g->num_edges * sizeof(tarjan_vertex));
+    for (int i = 0; i < g->num_edges; i++) {
+        vertices[i].id = i + 1;
+        vertices[i].num = -1
+        vertices[i].low = -1;
+        vertices[i].in_stack = 0;
+    }
+    return vertices;
+}
+
+
+
+
 
 
