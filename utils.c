@@ -105,19 +105,30 @@ static char *getID(int i) {
 
 void write_mermaid_file(graph *g, const char *filename) {
     FILE *f = fopen(filename, "wt");
-    // en tête de config
+    if (!f) {
+        perror("Cannot open file for writing");
+        return;
+    }
+
+    // En-tête de configuration
     fprintf(f, "---\nconfig:\nlayout: elk\ntheme: neo\nlook: neo\n---\nflowchart LR\n");
+
     // Définit les sommets
     for (int i = 0; i < g->num_edges; i++)
         fprintf(f, "%s((%d))\n", getID(i + 1), i + 1);
+
     // Ajoute les arêtes avec leurs probabilités
     for (int i = 0; i < g->num_edges; i++) {
+        char from[10];  // ✅ VARIABLE TEMPORAIRE
+        strcpy(from, getID(i + 1));  // ✅ COPIER AVANT LE 2e APPEL
+
         cell *c = g->edges[i].head;
         while (c) {
-            fprintf(f, "%s -->|%.2f|%s\n", getID(i + 1), c->weight, getID(c->end_edge));
+            fprintf(f, "%s -->|%.2f|%s\n", from, c->weight, getID(c->end_edge));
             c = c->next;
         }
     }
+
     fclose(f);
 }
 
