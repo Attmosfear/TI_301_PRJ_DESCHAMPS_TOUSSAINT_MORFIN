@@ -141,17 +141,6 @@ void write_mermaid_file(graph *g, const char *filename) {
     fclose(f);
 }
 
-t_tarjan_vertex* init_tarjan_vertices(graph *g) {
-    t_tarjan_vertex *vertices = malloc(g->num_edges * sizeof(t_tarjan_vertex));
-    for (int i = 0; i < g->num_edges; i++) {
-        vertices[i].id = i + 1;
-        vertices[i].num = -1;
-        vertices[i].low = -1;
-        vertices[i].in_stack = 0;
-    }
-    return vertices;
-}
-
 // ============= FONCTIONS POUR LA PILE =============
 
 stack* create_stack(int capacity) {
@@ -196,7 +185,8 @@ void free_stack(stack *s) {
 // ============= FONCTIONS POUR LES CLASSES =============
 
 classe* create_classe(const char *name) {
-    classe *c = malloc(sizeof(t_classe));
+    classe *c = malloc(sizeof(classe));
+    c->name = malloc(strlen(name) + 1);
     strcpy(c->name, name);
     c->capacity = 10;
     c->vertices = malloc(c->capacity * sizeof(tarjan_vertex));
@@ -222,6 +212,7 @@ void print_classe(classe *c) {
 }
 
 void free_classe(classe *c) {
+    free(c->name);
     free(c->vertices);
     free(c);
 }
@@ -254,6 +245,7 @@ void print_partition(partition *p) {
 
 void free_partition(partition *p) {
     for (int i = 0; i < p->nb_classes; i++) {
+        free(p->classes[i].name);
         free(p->classes[i].vertices);
     }
     free(p->classes);
@@ -266,15 +258,95 @@ tarjan_vertex* init_tarjan_vertices(graph *g) {
     tarjan_vertex *vertices = malloc(g->num_edges * sizeof(tarjan_vertex));
     for (int i = 0; i < g->num_edges; i++) {
         vertices[i].id = i + 1;
-        vertices[i].num = -1
+        vertices[i].num = -1;
         vertices[i].low = -1;
         vertices[i].in_stack = 0;
     }
     return vertices;
 }
 
+void tarjan_parcours(int v, graph *g, tarjan_vertex *vertices, stack *s, int *num_counter, partition *part) {
+    // Initialisation du sommet v
+    vertices[v].num = *num_counter;
+    vertices[v].low = *num_counter;
+    (*num_counter)++;
 
+    push(s, v);
+    vertices[v].in_stack = 1;
 
+    // Parcourir tous les successeurs de v
+    cell *current = g->edges[v].head;
+    while (current) {
+        int w = current->end_edge - 1; // Convertir en index (base 0)
 
+        if (vertices[w].num == -1) {
+            // w pas encore visité
+            tarjan_parcours(w, g, vertices, s, num_counter, part);
+            vertices[v].low = min(vertices[v].low, vertices[w].low);
+        } else if (vertices[w].in_stack) {
+            // w est dans la pile (arc arrière)
+            vertices[v].low = min(vertices[v].low, vertices[w].num);
+        }
+
+        current = current->next;
+    }
+
+    // Si v est racine d'une composante fortement connexe
+    if (vertices[v].low == vertices[v].num) {
+        // Créer une nouvelle classe
+        char name[20];
+        sprintf(name, "C%d", part->nb_classes + 1);
+        classe *c = create_classe(name);
+
+        // Dépiler jusqu'à v
+        int w;
+        do {
+            w = pop(s);
+            vertices[w].in_stack = 0;
+            add_vertex_to_classe(c, vertices[w]);
+        } while (w != v);
+
+        add_classe_to_partition(part, c);
+        free(c); // On libère c car add_classe_to_partition fait une copie
+    }
+}
+
+partition* tarjan(graph *g) {
+    tarjan_vertex *vertices = init_tarjan_vertices(g);
+    stack *s = create_stack(g->num_edges);
+    partition *part = create_partition();
+    int num_counter = 0;
+
+    // Parcourir tous les sommets
+    for (int v = 0; v < g->num_edges; v++) {
+        if (vertices[v].num == -1) {
+            tarjan_parcours(v, g, vertices, s, &num_counter, part);
+        }
+    }
+
+    free_stack(s);
+    free(vertices);
+    return part;
+}
+
+// ============= FONCTIONS DE LIBÉRATION MÉMOIRE =============
+
+void free_list(list_adj *l) {
+    cell *current = l->head;
+    while (current) {
+        cell *next = current->next;
+        free(current);
+        current = next;
+    }
+}
+
+void free_graph(graph *g) {
+    if (!g) return;
+    for (int i = 0; i < g->num_edges; i++) {
+        free_list(&g->edges[i]);
+    }
+    free(g->edges);
+    free(g);
+}
 
 

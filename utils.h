@@ -56,6 +56,7 @@ typedef struct s_stack {
 
 tarjan_vertex* init_tarjan_vertices(graph *g);
 void tarjan_parcours(int v, graph *g, tarjan_vertex *vertices, stack *stack, int *num_counter, partition *partition);
+partition* tarjan(graph *g);
 
 // Fonctions pour la pile
 stack* create_stack(int capacity);
@@ -77,7 +78,9 @@ void add_classe_to_partition(partition *p, classe *c);
 void print_partition(partition *p);
 void free_partition(partition *p);
 
-
+// Fonctions de libération mémoire
+void free_list(list_adj *l);
+void free_graph(graph *g);
 
 #endif
 
