@@ -24,7 +24,6 @@ int main() {
     strcpy(filename, "data/");
     strcat(filename, name);
 
-    // ========== PARTIE 1 : Création et vérification du graphe ==========
     printf("\n=== PARTIE 1 : CRÉATION ET VÉRIFICATION ===\n");
 
     graph *g = read_graph_from_file(filename);
@@ -41,7 +40,6 @@ int main() {
     write_mermaid_file(g, "graph.mmd");
     printf("✓ Fichier graph.mmd généré avec succès\n");
 
-    // ========== PARTIE 2 : Algorithme de Tarjan et Hasse ==========
     printf("\n=== PARTIE 2 : ALGORITHME DE TARJAN ===\n");
 
     partition *part = tarjan(g);
@@ -63,28 +61,22 @@ int main() {
     write_hasse_mermaid(part, links, "hasse.mmd");
     printf("✓ Fichier hasse.mmd généré avec succès\n");
 
-    // Analyse des propriétés
     analyze_graph_properties(part, links);
 
-    // ========== PARTIE 3 : CALCULS MATRICIELS ==========
     printf("\n=== PARTIE 3 : CALCULS MATRICIELS ===\n");
 
-    // Créer la matrice de transitions
     t_matrix M = graphToMatrix(g);
     printf("\nMatrice de transitions M :\n");
     printMatrix(M);
 
-    // Calculer M^3
     printf("Calcul de M^3 :\n");
     t_matrix M3 = matrixPower(M, 3);
     printMatrix(M3);
 
-    // Calculer M^7
     printf("Calcul de M^7 :\n");
     t_matrix M7 = matrixPower(M, 7);
     printMatrix(M7);
 
-    // Recherche de la distribution stationnaire
     printf("Recherche de la distribution stationnaire avec epsilon=0.01 :\n");
     t_matrix M_prev = createEmptyMatrix(M.rows);
     t_matrix M_curr = createEmptyMatrix(M.rows);
@@ -108,10 +100,8 @@ int main() {
     printf("M^%d (différence < %.2f) :\n", n, epsilon);
     printMatrix(M_curr);
 
-    // Distribution stationnaire pour chaque classe persistante
     printf("\n=== DISTRIBUTIONS STATIONNAIRES PAR CLASSE ===\n");
     for (int i = 0; i < part->nb_classes; i++) {
-        // Vérifier si la classe est persistante
         int is_persistent = 1;
         for (int j = 0; j < links->nb_links; j++) {
             if (links->links[j].from_classe == i) {
@@ -136,7 +126,6 @@ int main() {
         }
     }
 
-    // ========== BONUS : PÉRIODICITÉ ==========
     printf("\n=== BONUS : PÉRIODICITÉ DES CLASSES ===\n");
 
     for (int i = 0; i < part->nb_classes; i++) {
@@ -148,7 +137,6 @@ int main() {
         }
     }
 
-    // ========== LIBÉRATION MÉMOIRE ==========
     freeMatrix(&M);
     freeMatrix(&M3);
     freeMatrix(&M7);

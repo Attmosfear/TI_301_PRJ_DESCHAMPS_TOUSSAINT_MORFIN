@@ -11,8 +11,7 @@ static int min(int a, int b) {
     return (a < b) ? a : b;
 }
 
-// ============= FONCTIONS POUR LES LISTES ET LES GRAPHS =============
-
+ 
 cell *create_cell(int end_edge, float weight) {
     cell *c = malloc(sizeof(cell));
     c->end_edge = end_edge;
@@ -58,18 +57,15 @@ void print_graph(graph *g) {
 }
 
 graph *read_graph_from_file(const char *filename) {
-    // Ouvre le fichier en lecture texte
     FILE *file = fopen(filename, "rt");
     if (!file) { perror("open"); exit(EXIT_FAILURE); }
 
     int nbvert, depart, arrivee;
     float proba;
 
-    // Lit le nombre de sommets (première ligne)
     if (fscanf(file, "%d", &nbvert) != 1) { perror("read nbvert"); exit(EXIT_FAILURE); }
     graph *g = create_empty_graph(nbvert);
 
-    // Lit chaque ligne suivante : départ, arrivée, probabilité
     while (fscanf(file, "%d %d %f", &depart, &arrivee, &proba) == 3)
         add_head(&g->edges[depart - 1], arrivee, proba);
 
@@ -80,13 +76,10 @@ graph *read_graph_from_file(const char *filename) {
 
 int is_markov_graph(graph *g) {
     int valid = 1;
-    // Parcourt tous les sommets
     for (int i = 0; i < g->num_edges; i++) {
         cell *c = g->edges[i].head;
         float sum = 0;
-        // Calcule la somme des probabilités sortantes
         while (c) { sum += c->weight; c = c->next; }
-        // Vérifie si la somme est proche de 1
         if (sum < 0.99 || sum > 1.01) {
             printf("Sommet %d invalide, somme=%.2f\n", i + 1, sum);
             valid = 0;
@@ -119,14 +112,11 @@ void write_mermaid_file(graph *g, const char *filename) {
         return;
     }
 
-    // En-tête de configuration
     fprintf(f, "---\nconfig:\nlayout: elk\ntheme: neo\nlook: neo\n---\nflowchart LR\n");
 
-    // Définit les sommets
     for (int i = 0; i < g->num_edges; i++)
         fprintf(f, "%s((%d))\n", getID(i + 1), i + 1);
 
-    // Ajoute les arêtes avec leurs probabilités
     for (int i = 0; i < g->num_edges; i++) {
         char from[10];
         strcpy(from, getID(i + 1));
@@ -141,8 +131,7 @@ void write_mermaid_file(graph *g, const char *filename) {
     fclose(f);
 }
 
-// ============= FONCTIONS POUR LA PILE =============
-
+ 
 stack* create_stack(int capacity) {
     stack *s = malloc(sizeof(stack));
     s->data = malloc(capacity * sizeof(int));
@@ -153,7 +142,6 @@ stack* create_stack(int capacity) {
 
 void push(stack *s, int value) {
     if (s->top >= s->capacity - 1) {
-        // Agrandir la pile si nécessaire
         s->capacity *= 2;
         s->data = realloc(s->data, s->capacity * sizeof(int));
     }
@@ -182,8 +170,7 @@ void free_stack(stack *s) {
     free(s);
 }
 
-// ============= FONCTIONS POUR LES CLASSES =============
-
+ 
 classe* create_classe(const char *name) {
     classe *c = malloc(sizeof(classe));
     c->name = malloc(strlen(name) + 1);
@@ -217,8 +204,7 @@ void free_classe(classe *c) {
     free(c);
 }
 
-// ============= FONCTIONS POUR LA PARTITION =============
-
+ 
 partition* create_partition() {
     partition *p = malloc(sizeof(partition));
     p->capacity = 10;
@@ -252,8 +238,7 @@ void free_partition(partition *p) {
     free(p);
 }
 
-// ============= ALGORITHME DE TARJAN =============
-
+ 
 tarjan_vertex* init_tarjan_vertices(graph *g) {
     tarjan_vertex *vertices = malloc(g->num_edges * sizeof(tarjan_vertex));
     for (int i = 0; i < g->num_edges; i++) {
@@ -266,7 +251,6 @@ tarjan_vertex* init_tarjan_vertices(graph *g) {
 }
 
 void tarjan_parcours(int v, graph *g, tarjan_vertex *vertices, stack *s, int *num_counter, partition *part) {
-    // Initialisation du sommet v
     vertices[v].num = *num_counter;
     vertices[v].low = *num_counter;
     (*num_counter)++;
@@ -274,31 +258,25 @@ void tarjan_parcours(int v, graph *g, tarjan_vertex *vertices, stack *s, int *nu
     push(s, v);
     vertices[v].in_stack = 1;
 
-    // Parcourir tous les successeurs de v
     cell *current = g->edges[v].head;
     while (current) {
         int w = current->end_edge - 1; // Convertir en index (base 0)
 
         if (vertices[w].num == -1) {
-            // w pas encore visité
             tarjan_parcours(w, g, vertices, s, num_counter, part);
             vertices[v].low = min(vertices[v].low, vertices[w].low);
         } else if (vertices[w].in_stack) {
-            // w est dans la pile (arc arrière)
             vertices[v].low = min(vertices[v].low, vertices[w].num);
         }
 
         current = current->next;
     }
 
-    // Si v est racine d'une composante fortement connexe
     if (vertices[v].low == vertices[v].num) {
-        // Créer une nouvelle classe
         char name[20];
         sprintf(name, "C%d", part->nb_classes + 1);
         classe *c = create_classe(name);
 
-        // Dépiler jusqu'à v
         int w;
         do {
             w = pop(s);
@@ -307,7 +285,7 @@ void tarjan_parcours(int v, graph *g, tarjan_vertex *vertices, stack *s, int *nu
         } while (w != v);
 
         add_classe_to_partition(part, c);
-        free(c); // On libère c car add_classe_to_partition fait une copie
+        free(c);
     }
 }
 
@@ -317,7 +295,6 @@ partition* tarjan(graph *g) {
     partition *part = create_partition();
     int num_counter = 0;
 
-    // Parcourir tous les sommets
     for (int v = 0; v < g->num_edges; v++) {
         if (vertices[v].num == -1) {
             tarjan_parcours(v, g, vertices, s, &num_counter, part);
@@ -329,8 +306,7 @@ partition* tarjan(graph *g) {
     return part;
 }
 
-// ============= FONCTIONS DE LIBÉRATION MÉMOIRE =============
-
+ 
 void free_list(list_adj *l) {
     cell *current = l->head;
     while (current) {

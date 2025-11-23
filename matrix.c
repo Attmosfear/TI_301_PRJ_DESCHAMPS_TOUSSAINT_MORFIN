@@ -11,13 +11,11 @@ t_matrix graphToMatrix(graph *g) {
     m.rows = g->num_edges;
     m.cols = g->num_edges;
 
-    // Allouer la matrice
     m.data = malloc(m.rows * sizeof(float*));
     for (int i = 0; i < m.rows; i++) {
         m.data[i] = calloc(m.cols, sizeof(float));
     }
 
-    // Remplir la matrice avec les probabilités
     for (int i = 0; i < g->num_edges; i++) {
         cell *current = g->edges[i].head;
         while (current) {
@@ -73,14 +71,12 @@ void multiplyMatrices(t_matrix A, t_matrix B, t_matrix *result) {
         return;
     }
 
-    // Initialiser le résultat à zéro
     for (int i = 0; i < result->rows; i++) {
         for (int j = 0; j < result->cols; j++) {
             result->data[i][j] = 0;
         }
     }
 
-    // Multiplication matricielle
     for (int i = 0; i < A.rows; i++) {
         for (int j = 0; j < B.cols; j++) {
             for (int k = 0; k < A.cols; k++) {
@@ -127,7 +123,6 @@ void freeMatrix(t_matrix *m) {
     m->cols = 0;
 }
 
-// ========== FONCTIONS POUR LA PARTIE 3 ==========
 
 t_matrix subMatrix(t_matrix matrix, partition part, int compo_index) {
     if (compo_index < 0 || compo_index >= part.nb_classes) {
@@ -138,10 +133,8 @@ t_matrix subMatrix(t_matrix matrix, partition part, int compo_index) {
     classe *c = &part.classes[compo_index];
     int n = c->nb_vertices;
 
-    // Créer la sous-matrice
     t_matrix sub = createEmptyMatrix(n);
 
-    // Extraire les lignes et colonnes correspondant aux sommets de la classe
     for (int i = 0; i < n; i++) {
         int row = c->vertices[i].id - 1;  // Convertir en index base 0
         for (int j = 0; j < n; j++) {
@@ -169,7 +162,6 @@ t_matrix matrixPower(t_matrix M, int n) {
         return result;
     }
 
-    // Multiplication itérative
     t_matrix result = createEmptyMatrix(M.rows);
     t_matrix temp = createEmptyMatrix(M.rows);
     copyMatrix(&result, M);
@@ -189,13 +181,10 @@ float* computeDistribution(float *initial_dist, t_matrix M, int n, int size) {
         return NULL;
     }
 
-    // Calculer M^n
     t_matrix Mn = matrixPower(M, n);
 
-    // Allouer le vecteur résultat
     float *result = malloc(size * sizeof(float));
 
-    // Multiplier le vecteur initial par M^n
     for (int j = 0; j < size; j++) {
         result[j] = 0;
         for (int i = 0; i < size; i++) {
@@ -210,16 +199,13 @@ float* computeDistribution(float *initial_dist, t_matrix M, int n, int size) {
 float* findStationaryDistribution(t_matrix M, float epsilon, int max_iter) {
     int n = M.rows;
 
-    // Distribution initiale uniforme
     float *current = malloc(n * sizeof(float));
     float *next = malloc(n * sizeof(float));
     for (int i = 0; i < n; i++) {
         current[i] = 1.0f / n;
     }
 
-    // Itération jusqu'à convergence
     for (int iter = 0; iter < max_iter; iter++) {
-        // Calculer next = current * M
         for (int j = 0; j < n; j++) {
             next[j] = 0;
             for (int i = 0; i < n; i++) {
@@ -227,18 +213,15 @@ float* findStationaryDistribution(t_matrix M, float epsilon, int max_iter) {
             }
         }
 
-        // Calculer la différence
         float delta = 0;
         for (int i = 0; i < n; i++) {
             delta += fabsf(next[i] - current[i]);
         }
 
-        // Copier next dans current
         for (int i = 0; i < n; i++) {
             current[i] = next[i];
         }
 
-        // Vérifier la convergence
         if (delta < epsilon) {
             printf("Convergence atteinte après %d itérations\n", iter + 1);
             free(next);
